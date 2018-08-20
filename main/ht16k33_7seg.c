@@ -7,12 +7,24 @@
 #include "esp_spi_flash.h"
 #include "ht16k33_7seg.h"
 
+#define I2C_MASTER_SCL_IO          19
+#define I2C_MASTER_SDA_IO          18
+#define I2C_MASTER_NUM             I2C_NUM_0
+#define I2C_MASTER_TX_BUF_ENABLE   0
+#define I2C_MASTER_RX_BUF_ENABLE   0
+#define I2C_MASTER_FREQ_HZ         400000
+
+#define HT16K33_ADDR               0x70
+#define HT16K33_BLINK_CMD          0x80
+#define HT16k33_BRIGHTNESS_CMD     0xE0
+#define HT16K33_BLINK_DISPLAYON    0x01
+#define HT16K33_7SEG_DIGITS        5
+#define HT16K33_OSCILLATOR_CMD     0x21
+
 static uint16_t _display_buffer[8];
 static uint8_t _position = 0;
 static int _sda_gpio = I2C_MASTER_SDA_IO;
 static int _scl_gpio = I2C_MASTER_SCL_IO;
-
-static char _tag[] = "HT16K33 library";
 
 static const uint8_t _number_table[] =
 {
@@ -40,7 +52,7 @@ static const uint8_t _number_table[] =
 static void
 _i2c_master_init()
 {
-    int i2c_master_port = I2C_MASTER_NUM;
+    uint8_t i2c_master_port = I2C_MASTER_NUM;
     i2c_config_t conf;
 
     ESP_LOGD(_tag, "I2C init");
@@ -103,7 +115,7 @@ ht16k33_write_digit_raw(uint8_t d, uint8_t bitmask)
 }
 
 void
-ht16k33_write_digit_num(uint8_t d, uint8_t num, int dot)
+ht16k33_write_digit_num(uint8_t d, uint8_t num, uint8_t dot)
 {
     ESP_LOGD(_tag, "write_digit_num %d, %d, %d", d, num,
              _number_table[num]| (dot << 7));
@@ -116,9 +128,9 @@ ht16k33_write_digit_num(uint8_t d, uint8_t num, int dot)
 size_t
 write(uint8_t c)
 {
-    ESP_LOGD(_tag, "write %c %d", c, c);
-
     uint8_t r = 0;
+
+    ESP_LOGD(_tag, "write %c %d", c, c);
 
     if (c == '\n') _position = 0;
     if (c == '\r') _position = 0;
@@ -177,7 +189,7 @@ print_float(double n, uint8_t fracDigits, uint8_t base)
 
     uint8_t numericDigits = 4;   // available digits on display
     uint8_t i;
-    int isNegative = 0;  // true if the number is negative
+    uint8_t isNegative = 0;  // true if the number is negative
     double toIntFactor = 1.0;
     uint32_t displayNumber;
     uint32_t tooBig = 1;
@@ -221,7 +233,7 @@ print_float(double n, uint8_t fracDigits, uint8_t base)
         {
             for(i = 0; displayNumber || i <= fracDigits; ++i)
             {
-                int displayDecimal = (fracDigits != 0 && i == fracDigits);
+                uint8_t displayDecimal = (fracDigits != 0 && i == fracDigits);
                 ht16k33_write_digit_num(displayPos--, displayNumber % base, displayDecimal);
                 if(displayPos == 2) ht16k33_write_digit_raw(displayPos--, 0x00);
                 displayNumber /= base;
@@ -239,7 +251,7 @@ print_float(double n, uint8_t fracDigits, uint8_t base)
 }
 
 void
-ht16k33_draw_colon(int state)
+ht16k33_draw_colon(uint8_t state)
 {
     if (state)
         _display_buffer[2] = 0x2;
@@ -266,38 +278,38 @@ print_number(long n, uint8_t base)
 }
 
 void
-_bprint(unsigned long n, int base)
+_print(unsigned long n, uint8_t base)
 {
     if (base == 0) write(n);
     else print_number(n, base);
 }
 
 void
-_print_char(char c, int base)
+_print_char(char c, uint8_t base)
 {
     ESP_LOGD(_tag, "print char");
-    _bprint((long) c, base);
+    _print((long) c, base);
 }
 
 void
-_print_uchar(unsigned char b, int base)
+_print_uchar(unsigned char b, uint8_t base)
 {
     ESP_LOGD(_tag, "print uchar");
-    _bprint((unsigned long) b, base);
+    _print((unsigned long) b, base);
 }
 
 void
-_print_int(int n, int base)
+_print_int(int n, uint8_t base)
 {
     ESP_LOGD(_tag, "print int");
-    _bprint((long) n, base);
+    _print((long) n, base);
 }
 
 void
-_print_uint(unsigned int n, int base)
+_print_uint(unsigned int n, uint8_t base)
 {
     ESP_LOGD(_tag, "print uint");
-    _bprint((unsigned long) n, base);
+    _print((unsigned long) n, base);
 }
 
 void
@@ -308,62 +320,62 @@ _println(void)
 }
 
 void
-_println_char(char c, int base)
+_println_char(char c, uint8_t base)
 {
     ESP_LOGD(_tag, "println char");
-    _bprint(c, base);
+    _print_char(c, base);
     _println();
 }
 
 void
-_println_uchar(unsigned char b, int base)
+_println_uchar(unsigned char b, uint8_t base)
 {
     ESP_LOGD(_tag, "println uchar");
-    _bprint(b, base);
+    _print_uchar(b, base);
     _println();
 }
 
 void
-_println_int(int n, int base)
+_println_int(int n, uint8_t base)
 {
     ESP_LOGD(_tag, "println int");
-    _bprint(n, base);
+    _print_int(n, base);
     _println();
 }
 
 void
-_println_uint(unsigned int n, int base)
+_println_uint(unsigned int n, uint8_t base)
 {
     ESP_LOGD(_tag, "println uint");
-    _bprint(n, base);
+    _print_uint(n, base);
     _println();
 }
 
 void
-_println_long(long n, int base)
+_println_long(long n, uint8_t base)
 {
     ESP_LOGD(_tag, "println long");
-    _bprint(n, base);
+    _print(n, base);
     _println();
 }
 
 void
-_println_ulong(unsigned long n, int base)
+_println_ulong(unsigned long n, uint8_t base)
 {
     ESP_LOGD(_tag, "println ulong");
-    _bprint(n, base);
+    _print(n, base);
     _println();
 }
 
 void
-_print_double(double n, int digits)
+_print_double(double n, uint8_t digits)
 {
     ESP_LOGD(_tag, "print double");
     print_float(n, digits, 10);
 }
 
 void
-_println_double(double n, int digits)
+_println_double(double n, uint8_t digits)
 {
     ESP_LOGD(_tag, "println double");
     _print_double(n, digits);
@@ -371,15 +383,15 @@ _println_double(double n, int digits)
 }
 
 void
-ht16k33_init(int sda_gpio, int scl_gpio)
+ht16k33_init(uint8_t sda_gpio, uint8_t scl_gpio)
 {
     _sda_gpio = sda_gpio;
     _scl_gpio = scl_gpio;
 
     _i2c_master_init();
-    _i2c_master_write_cmd(I2C_MASTER_NUM, 0x21);
+    _i2c_master_write_cmd(I2C_MASTER_NUM, HT16K33_OSCILLATOR_CMD);
 
-    ht16k33_set_blink_rate(0);
+    ht16k33_set_blink_rate(HT16K33_BLINK_OFF);
     ht16k33_set_brightness(10);
 }
 
