@@ -26,6 +26,8 @@ static uint8_t _position = 0;
 static int _sda_gpio = I2C_MASTER_SDA_IO;
 static int _scl_gpio = I2C_MASTER_SCL_IO;
 
+static char _tag[] = "HT16K33 library";
+
 static const uint8_t _number_table[] =
 {
     0x3F, /* 0 */
@@ -259,18 +261,6 @@ ht16k33_draw_colon(uint8_t state)
         _display_buffer[2] = 0;
 }
 
-/*void*/
-/*write_colon(void)*/
-/*{*/
-/*Wire.beginTransmission(i2c_addr);*/
-/*Wire.write((uint8_t)0x04); // start at address $02*/
-
-/*Wire.write(_display_buffer[2] & 0xFF);*/
-/*Wire.write(_display_buffer[2] >> 8);*/
-
-/*Wire.endTransmission();*/
-/*}*/
-
 void
 print_number(long n, uint8_t base)
 {
@@ -313,61 +303,6 @@ _print_uint(unsigned int n, uint8_t base)
 }
 
 void
-_println(void)
-{
-    ESP_LOGD(_tag, "println");
-    _position = 0;
-}
-
-void
-_println_char(char c, uint8_t base)
-{
-    ESP_LOGD(_tag, "println char");
-    _print_char(c, base);
-    _println();
-}
-
-void
-_println_uchar(unsigned char b, uint8_t base)
-{
-    ESP_LOGD(_tag, "println uchar");
-    _print_uchar(b, base);
-    _println();
-}
-
-void
-_println_int(int n, uint8_t base)
-{
-    ESP_LOGD(_tag, "println int");
-    _print_int(n, base);
-    _println();
-}
-
-void
-_println_uint(unsigned int n, uint8_t base)
-{
-    ESP_LOGD(_tag, "println uint");
-    _print_uint(n, base);
-    _println();
-}
-
-void
-_println_long(long n, uint8_t base)
-{
-    ESP_LOGD(_tag, "println long");
-    _print(n, base);
-    _println();
-}
-
-void
-_println_ulong(unsigned long n, uint8_t base)
-{
-    ESP_LOGD(_tag, "println ulong");
-    _print(n, base);
-    _println();
-}
-
-void
 _print_double(double n, uint8_t digits)
 {
     ESP_LOGD(_tag, "print double");
@@ -375,11 +310,10 @@ _print_double(double n, uint8_t digits)
 }
 
 void
-_println_double(double n, uint8_t digits)
+_println(void)
 {
-    ESP_LOGD(_tag, "println double");
-    _print_double(n, digits);
-    _println();
+    ESP_LOGD(_tag, "println");
+    _position = 0;
 }
 
 void
